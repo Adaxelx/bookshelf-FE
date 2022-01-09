@@ -53,6 +53,10 @@ form {
   user-select: none;
 }
 
+.form-validation-error {
+  color: var(--bs-danger);
+}
+
 @media (min-width: 768px) {
   .bd-placeholder-img-lg {
     font-size: 3.5rem;

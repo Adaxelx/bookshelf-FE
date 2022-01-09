@@ -18,8 +18,8 @@ export function client(endpoint: string, { body, ...customConfig }: any = {}) {
     if (response.ok) {
       return await response.json();
     } else {
-      const errorMessage = await response.text();
-      throw new Error(errorMessage);
+      const errorMessage = await response.json();
+      throw errorMessage;
     }
   });
 }

@@ -1,6 +1,15 @@
-import { ActionFunction, LinksFunction, redirect, useActionData } from 'remix';
+import {
+  ActionFunction,
+  json,
+  LinksFunction,
+  LoaderFunction,
+  redirect,
+  useActionData,
+  useLoaderData,
+} from 'remix';
 
 import { login } from '~/api/user';
+import { commitSession, getSession } from '~/sessions';
 import styles from '~/styles/login.css';
 // TEMPLATE: https://getbootstrap.com/docs/5.1/examples/ ->  https://getbootstrap.com/docs/5.1/examples/sign-in/
 
@@ -27,6 +36,23 @@ const validateEmail = (email: string) => {
   }
 };
 
+export const loader: LoaderFunction = async ({ request }) => {
+  const session = await getSession(request.headers.get('Cookie'));
+
+  if (session.has('token')) {
+    // Redirect to the bookshelf if logged in
+    return redirect('/bookshelf');
+  }
+
+  const data = { error: session.get('error') };
+
+  return json(data, {
+    headers: {
+      'Set-Cookie': await commitSession(session),
+    },
+  });
+};
+
 const validatePassword = (password: string) => password.length < 6 && 'Za krótkie hasło';
 
 type ActionData = {
@@ -43,6 +69,8 @@ type ActionData = {
 };
 
 export const action: ActionFunction = async ({ request }) => {
+  const session = await getSession(request.headers.get('Cookie'));
+
   const form = await request.formData();
   const email = form.get('email') as string;
   const password = form.get('password') as string;
@@ -58,21 +86,33 @@ export const action: ActionFunction = async ({ request }) => {
     return { fieldErrors, fields };
   }
   try {
-    await login({ email, password });
-    //set Cookie here
+    const data = await login({ email, password });
+    session.set('token', data.token);
+    return redirect('/bookshelf', {
+      headers: {
+        'Set-Cookie': await commitSession(session),
+      },
+    });
   } catch (err) {
-    return { backendErr: err, fields };
+    session.flash('error', err?.status);
+
+    // Redirect back to the login page with errors.
+    return redirect('/login', {
+      headers: {
+        'Set-Cookie': await commitSession(session),
+      },
+    });
   }
-  return redirect(`/`);
 };
 
 export default function Login() {
   const actionData = useActionData<ActionData | undefined>();
+  const { error } = useLoaderData();
 
   return (
     <div className="login-wrapper">
       <main className="form-signin">
-        <form method="post" action="/login">
+        <form method="POST">
           <h1 className="h3 mb-3 fw-normal">Login</h1>
           <div className="form-floating">
             <input
@@ -110,9 +150,9 @@ export default function Login() {
               </p>
             ) : null}
           </div>
-          {actionData?.formError || actionData?.backendErr ? (
+          {actionData?.formError || actionData?.backendErr || error ? (
             <p className="form-validation-error" role="alert" id="name-error">
-              {actionData?.formError || actionData?.backendErr?.status}
+              {actionData?.formError || actionData?.backendErr?.status || error}
             </p>
           ) : null}
           <button className="w-100 btn btn-lg btn-primary" type="submit">

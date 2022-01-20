@@ -18,3 +18,19 @@ export const checkIfAuthorized = async (request: Request) => {
     },
   });
 };
+
+export const checkIfLoggedIn = async (request: Request) => {
+  const session = await getSession(request.headers.get('Cookie'));
+
+  if (session.has('token')) {
+    return redirect('/bookshelf');
+  }
+
+  const data = { error: session.get('error') };
+
+  return json(data, {
+    headers: {
+      'Set-Cookie': await commitSession(session),
+    },
+  });
+};

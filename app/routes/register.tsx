@@ -7,7 +7,7 @@ import {
   useLoaderData,
 } from 'remix';
 
-import { login } from '~/api/user';
+import { register } from '~/api/user';
 import { checkIfLoggedIn } from '~/helpers/session';
 import { validateEmail, validatePassword } from '~/helpers/validation';
 import { commitSession, getSession } from '~/sessions';
@@ -30,10 +30,12 @@ export const loader: LoaderFunction = async ({ request }) => {
 type ActionData = {
   formError?: string;
   fieldErrors?: {
-    email: string | undefined;
-    password: string | undefined;
+    email?: string;
+    password?: string;
+    name?: string;
   };
   fields?: {
+    name: string;
     email: string;
     password: string;
   };
@@ -46,19 +48,31 @@ export const action: ActionFunction = async ({ request }) => {
   const form = await request.formData();
   const email = form.get('email') as string;
   const password = form.get('password') as string;
-  const fields = { email, password };
-  if (typeof email !== 'string' || typeof password !== 'string') {
-    return { formError: `Email i hasło są wymagane.` };
+  const passwordRepeat = form.get('passwordRepeat') as string;
+  const name = form.get('name') as string;
+  const fields = { email, password, name };
+  if (
+    typeof email !== 'string' ||
+    typeof password !== 'string' ||
+    typeof passwordRepeat !== 'string' ||
+    typeof name !== 'string'
+  ) {
+    return { formError: `Wszystkie pola są wymagane.` };
   }
   const fieldErrors = {
     email: validateEmail(email),
-    password: validatePassword(password),
+    password:
+      validatePassword(password) || password !== passwordRepeat
+        ? 'Hasła muszą być identyczne'
+        : undefined,
   };
+
   if (Object.values(fieldErrors).some(Boolean)) {
     return { fieldErrors, fields };
   }
   try {
-    const data = await login({ email, password });
+    const data = await register({ email, password, name });
+
     session.set('token', data.token);
     return redirect('/bookshelf', {
       headers: {
@@ -66,10 +80,11 @@ export const action: ActionFunction = async ({ request }) => {
       },
     });
   } catch (err) {
+    console.log(err);
     session.flash('error', err?.message);
 
     // Redirect back to the login page with errors.
-    return redirect('/login', {
+    return redirect('/register', {
       headers: {
         'Set-Cookie': await commitSession(session),
       },
@@ -77,7 +92,7 @@ export const action: ActionFunction = async ({ request }) => {
   }
 };
 
-export default function Login() {
+export default function Register() {
   const actionData = useActionData<ActionData | undefined>();
   const { error } = useLoaderData();
 
@@ -85,7 +100,7 @@ export default function Login() {
     <div className="login-wrapper">
       <main className="form-signin">
         <form method="POST">
-          <h1 className="h3 mb-3 fw-normal">Login</h1>
+          <h1 className="h3 mb-3 fw-normal">Zarejestruj się</h1>
           <div className="form-floating">
             <input
               type="email"
@@ -97,14 +112,32 @@ export default function Login() {
               aria-invalid={Boolean(actionData?.fieldErrors?.email) || undefined}
               aria-describedby={actionData?.fieldErrors?.email ? 'email-error' : undefined}
             />
-            <label htmlFor="floatingInput">Email address</label>
+            <label htmlFor="floatingInput">Adres email</label>
             {actionData?.fieldErrors?.email ? (
               <p className="form-validation-error" role="alert" id="name-error">
                 {actionData.fieldErrors.email}
               </p>
             ) : null}
           </div>
-          <div className="form-floating form-floating--last">
+          <div className="form-floating">
+            <input
+              type="text"
+              name="name"
+              className="form-control"
+              id="name"
+              placeholder="Imię"
+              defaultValue={actionData?.fields?.name}
+              aria-invalid={Boolean(actionData?.fieldErrors?.name) || undefined}
+              aria-describedby={actionData?.fieldErrors?.name ? 'name-error' : undefined}
+            />
+            <label htmlFor="floatingInput">Imię</label>
+            {actionData?.fieldErrors?.name ? (
+              <p className="form-validation-error" role="alert" id="name-error">
+                {actionData.fieldErrors.name}
+              </p>
+            ) : null}
+          </div>
+          <div className="form-floating">
             <input
               type="password"
               name="password"
@@ -115,20 +148,30 @@ export default function Login() {
               aria-invalid={Boolean(actionData?.fieldErrors?.password) || undefined}
               aria-describedby={actionData?.fieldErrors?.password ? 'password-error' : undefined}
             />
-            <label htmlFor="floatingPassword">Password</label>
+            <label htmlFor="floatingPassword">Hasło</label>
             {actionData?.fieldErrors?.password ? (
               <p className="form-validation-error" role="alert" id="name-error">
                 {actionData.fieldErrors.password}
               </p>
             ) : null}
           </div>
+          <div className="form-floating form-floating--last">
+            <input
+              type="password"
+              name="passwordRepeat"
+              className="form-control"
+              id="passwordRepeat"
+              placeholder="Password"
+            />
+            <label htmlFor="passwordRepeat">Powtórz hasło</label>
+          </div>
           {actionData?.formError || actionData?.backendErr || error ? (
             <p className="form-validation-error" role="alert" id="name-error">
-              {actionData?.formError || actionData?.backenderr?.message || error}
+              {actionData?.formError || actionData?.backendErr?.message || error}
             </p>
           ) : null}
           <button className="w-100 btn btn-lg btn-primary" type="submit">
-            Sign in
+            Utwórz konto
           </button>
         </form>
       </main>

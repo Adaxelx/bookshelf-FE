@@ -1,5 +1,6 @@
 import {
   ActionFunction,
+  json,
   LinksFunction,
   LoaderFunction,
   redirect,
@@ -8,7 +9,6 @@ import {
 } from 'remix';
 
 import { login } from '~/api/user';
-import { checkIfLoggedIn } from '~/helpers/session';
 import { validateEmail, validatePassword } from '~/helpers/validation';
 import { commitSession, getSession } from '~/sessions';
 import styles from '~/styles/login.css';
@@ -24,7 +24,20 @@ export const links: LinksFunction = () => {
 };
 
 export const loader: LoaderFunction = async ({ request }) => {
-  return checkIfLoggedIn(request);
+  const session = await getSession(request.headers.get('Cookie'));
+
+  if (session.has('token')) {
+    // Redirect to the home page if they are already signed in.
+    return redirect('/bookshelf');
+  }
+
+  const data = { error: session.get('error') };
+
+  return json(data, {
+    headers: {
+      'Set-Cookie': await commitSession(session),
+    },
+  });
 };
 
 type ActionData = {
@@ -60,6 +73,8 @@ export const action: ActionFunction = async ({ request }) => {
   try {
     const data = await login({ email, password });
     session.set('token', data.token);
+    session.set('userId', data.id);
+
     return redirect('/bookshelf', {
       headers: {
         'Set-Cookie': await commitSession(session),

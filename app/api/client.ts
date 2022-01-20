@@ -1,11 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-export function client(endpoint: string, { body, ...customConfig }: any = {}) {
+export function client(endpoint: string, { body, token, ...customConfig }: any = {}) {
   const headers: any = { 'content-type': 'application/json' };
 
   const config = {
     method: body ? 'POST' : 'GET',
     ...customConfig,
     headers: {
+      Authorization: `Bearer ${token}`,
       ...headers,
       ...customConfig.headers,
     },

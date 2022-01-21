@@ -1,4 +1,4 @@
-import { Card, ListGroup } from 'react-bootstrap';
+import { Button, Card, ListGroup } from 'react-bootstrap';
 import { Link, LoaderFunction, redirect, useLoaderData } from 'remix';
 
 import { getBookGroups } from '~/api/bookGroup';
@@ -30,6 +30,9 @@ export default function Index() {
     <Card>
       <Card.Header>
         <h3>Twoje kluby książki</h3>
+        <Button variant="secondary" as={Link} to={`/book-group/new`}>
+          Dodaj nowy klub!
+        </Button>
       </Card.Header>
       <Card.Body>
         <ListGroup>

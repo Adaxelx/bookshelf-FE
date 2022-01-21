@@ -14,7 +14,7 @@ const { getSession, commitSession, destroySession } = createCookieSessionStorage
     // all of these are optional
     expires: new Date(Date.now() + 3600000),
     httpOnly: true,
-    maxAge: 60,
+    maxAge: 3600000,
     path: '/',
     sameSite: 'lax',
     secrets: [sessionSecret],

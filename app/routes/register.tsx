@@ -28,7 +28,7 @@ export const loader: LoaderFunction = async ({ request }) => {
 
   if (session.has('token')) {
     // Redirect to the home page if they are already signed in.
-    return redirect('/bookshelf');
+    return redirect('/book-group');
   }
 
   const data = { error: session.get('error') };
@@ -87,7 +87,7 @@ export const action: ActionFunction = async ({ request }) => {
     const data = await register({ email, password, name });
 
     session.set('token', data.token);
-    return redirect('/bookshelf', {
+    return redirect('/book-group', {
       headers: {
         'Set-Cookie': await commitSession(session),
       },

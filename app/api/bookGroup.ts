@@ -13,5 +13,5 @@ export const createBookGroup = ({ token, body }: WithTokenAndId): Promise<BookGr
 };
 
 export const addUserToGroup = ({ token, body, id }: WithTokenAndId): Promise<BookGroup> => {
-  return client(`${url}/${id}/addUser`, { token, body });
+  return client(`${url}/${id}/addUser`, { token, body, method: 'PATCH' });
 };

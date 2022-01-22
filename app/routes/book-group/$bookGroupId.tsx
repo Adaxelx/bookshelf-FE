@@ -23,10 +23,11 @@ export const loader: LoaderFunction = async ({ request, params }) => {
   const token = session.data.token;
 
   const data: BookGroup[] = await getBookGroups({ id, token });
-  const name = data.find(bookGroup => bookGroup.id === parseInt(bookGroupId))?.name;
+  const bookGroup = data.find(bookGroup => bookGroup.id === parseInt(bookGroupId));
 
-  if (name && bookGroupId) {
-    return { name, bookGroupId };
+  if (bookGroup && bookGroupId) {
+    const { name, creatorId } = bookGroup;
+    return { name, bookGroupId, isAdmin: creatorId === id };
   }
 
   throw new Response('Not Found', {
@@ -35,20 +36,28 @@ export const loader: LoaderFunction = async ({ request, params }) => {
 };
 
 export default function BookGroupView() {
-  const { name, bookGroupId } = useLoaderData<{ name: string; bookGroupId: string }>();
+  const { name, bookGroupId, isAdmin } =
+    useLoaderData<{ name: string; bookGroupId: string; isAdmin: boolean }>();
   return (
     <Card>
       <Card.Header>
         <h3>{name}</h3>
-        <Nav defaultActiveKey={`/book-group/${bookGroupId}/addUser`}>
+        <Nav defaultActiveKey={`/book-group/${bookGroupId}`}>
           <Nav.Item>
-            <Nav.Link href={`/book-group/${bookGroupId}/addUser`}>Dodaj uzytkownika</Nav.Link>
+            <Nav.Link href={`/book-group/${bookGroupId}`}>Losowanie kategorii</Nav.Link>
           </Nav.Item>
-          <Nav.Item>
-            <Nav.Link href={`/book-group/${bookGroupId}/categories`}>
-              Zarzadzaj kategoriami
-            </Nav.Link>
-          </Nav.Item>
+          {isAdmin && (
+            <>
+              <Nav.Item>
+                <Nav.Link href={`/book-group/${bookGroupId}/add-user`}>Dodaj uzytkownika</Nav.Link>
+              </Nav.Item>
+              <Nav.Item>
+                <Nav.Link href={`/book-group/${bookGroupId}/categories`}>
+                  Zarzadzaj kategoriami
+                </Nav.Link>
+              </Nav.Item>
+            </>
+          )}
           <Nav.Item>
             <Nav.Link href={`/book-group/${bookGroupId}/history`}>Historia losowań</Nav.Link>
           </Nav.Item>

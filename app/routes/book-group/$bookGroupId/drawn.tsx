@@ -29,7 +29,9 @@ export const loader: LoaderFunction = async ({ request, params }) => {
   const token = session.data.token;
 
   const data: BookCategory[] = await getCategories({ bookGroupId, token });
-  return data.sort((a, b) => (a.isActive === b.isActive ? 0 : a.isActive ? -1 : 1));
+  return data
+    .filter(({ wasPicked }) => wasPicked)
+    .sort((a, b) => (a.isActive === b.isActive ? 0 : a.isActive ? -1 : 1));
 };
 
 export const action: ActionFunction = async ({ request, params }) => {
@@ -64,45 +66,44 @@ export default function Categories() {
   const message = useActionData<string | undefined>();
   return (
     <>
-      <h4>Zarządzanie kategoriami</h4>
-      <Button as={Link} className="mb-2" to={`/book-group/${bookGroupId}/categories/new`}>
-        Dodaj nową kategorie
-      </Button>
+      <h4>Wylosowane kategorie</h4>
       {message && <Alert variant="success">{message}</Alert>}
       <ListGroup>
-        {bookCategories.map(({ id, name, isActive, wasPicked }) => (
-          <ListGroup.Item
-            key={id}
-            variant={!isActive && wasPicked ? 'secondary' : undefined}
-            active={isActive}
-          >
-            <Col className="d-flex justify-content-between align-items-center">
-              {name}
-              <form method="POST">
-                <input type="hidden" name="categoryId" value={id} />
+        {bookCategories.map(({ id, name, isActive, wasPicked }) => {
+          const isHistorical = !isActive && wasPicked;
+          return (
+            <ListGroup.Item
+              key={id}
+              variant={isHistorical ? 'secondary' : undefined}
+              active={isActive}
+            >
+              <Col className="d-flex justify-content-between align-items-center">
+                {name}
                 <ButtonGroup>
                   <Button
                     variant="secondary"
                     as={Link}
-                    to={`/book-group/${bookGroupId}/categories/${id}`}
+                    to={`/book-group/${bookGroupId}/drawn/${id}`}
                   >
-                    Dodaj ksiązkę
+                    Podgląd
                   </Button>
-                  <Button
-                    variant="secondary"
-                    as={Link}
-                    to={`/book-group/${bookGroupId}/categories/${id}`}
-                  >
-                    Edytuj
-                  </Button>
+                  {isHistorical && (
+                    <form method="POST">
+                      <input type="hidden" name="categoryId" value={id} />
+                      <Button
+                        variant="secondary"
+                        as={Link}
+                        to={`/book-group/${bookGroupId}/categories/${id}/opinion`}
+                      >
+                        Dodaj opinie
+                      </Button>
+                    </form>
+                  )}
                 </ButtonGroup>
-                <Button variant="danger" type="submit">
-                  X
-                </Button>
-              </form>
-            </Col>
-          </ListGroup.Item>
-        ))}
+              </Col>
+            </ListGroup.Item>
+          );
+        })}
       </ListGroup>
     </>
   );

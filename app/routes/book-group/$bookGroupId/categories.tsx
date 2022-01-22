@@ -9,9 +9,10 @@ import {
   useParams,
 } from 'remix';
 
+import { getBook } from '~/api/book';
 import { deleteBookCategory, getCategories } from '~/api/bookCategory';
 import { getSession } from '~/sessions';
-import { BookCategory } from '~/types/bookCategory';
+import { BookCategory, BookCategoryWithBook } from '~/types/bookCategory';
 
 export const loader: LoaderFunction = async ({ request, params }) => {
   const { bookGroupId } = params;
@@ -29,7 +30,19 @@ export const loader: LoaderFunction = async ({ request, params }) => {
   const token = session.data.token;
 
   const data: BookCategory[] = await getCategories({ bookGroupId, token });
-  return data.sort((a, b) => (a.isActive === b.isActive ? 0 : a.isActive ? -1 : 1));
+
+  const booksResponse = await Promise.allSettled(
+    data.map(({ id }) => getBook({ token, bookGroupId, categoryId: id }))
+  );
+  const books = booksResponse.filter(data => data?.status === 'fulfilled');
+
+  return data
+    .map(({ id, ...rest }) => ({
+      id,
+      ...rest,
+      hasBook: Boolean(books.find(response => response.value.categoryId === id)),
+    }))
+    .sort((a, b) => (a.isActive === b.isActive ? 0 : a.isActive ? -1 : 1));
 };
 
 export const action: ActionFunction = async ({ request, params }) => {
@@ -60,7 +73,8 @@ export const action: ActionFunction = async ({ request, params }) => {
 
 export default function Categories() {
   const { bookGroupId } = useParams();
-  const bookCategories = useLoaderData<BookCategory[]>();
+  const bookCategories = useLoaderData<BookCategoryWithBook[]>();
+  console.log(bookCategories);
   const message = useActionData<string | undefined>();
   return (
     <>
@@ -70,7 +84,7 @@ export default function Categories() {
       </Button>
       {message && <Alert variant="success">{message}</Alert>}
       <ListGroup>
-        {bookCategories.map(({ id, name, isActive, wasPicked }) => (
+        {bookCategories.map(({ id, name, isActive, wasPicked, hasBook }) => (
           <ListGroup.Item
             key={id}
             variant={!isActive && wasPicked ? 'secondary' : undefined}
@@ -81,13 +95,15 @@ export default function Categories() {
               <form method="POST">
                 <input type="hidden" name="categoryId" value={id} />
                 <ButtonGroup>
-                  <Button
-                    variant="secondary"
-                    as={Link}
-                    to={`/book-group/${bookGroupId}/categories/${id}`}
-                  >
-                    Dodaj ksiązkę
-                  </Button>
+                  {!hasBook && (
+                    <Button
+                      variant="secondary"
+                      as={Link}
+                      to={`/book-group/${bookGroupId}/categories/${id}/add-book`}
+                    >
+                      Dodaj ksiązkę
+                    </Button>
+                  )}
                   <Button
                     variant="secondary"
                     as={Link}

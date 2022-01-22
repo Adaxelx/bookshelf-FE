@@ -5,3 +5,7 @@ export type BookCategory = {
   isActive: boolean;
   wasPicked: boolean;
 };
+
+export type BookCategoryWithBook = {
+  hasBook: boolean;
+} & BookCategory;

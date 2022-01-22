@@ -19,13 +19,22 @@ export const action: ActionFunction = async ({ request, params }) => {
 
   const token = session.data.token;
 
-  const data: BookGroup = await addUserToGroup({ body: { email }, token, id: bookGroupId });
-
-  return `Pomyślnie dodano uzytkownika z mailem ${email} do grupy ${data.name}.`;
+  try {
+    const data: BookGroup = await addUserToGroup({ body: { email }, token, id: bookGroupId });
+    return {
+      variant: 'success',
+      message: `Pomyślnie dodano uzytkownika z mailem ${email} do grupy ${data.name}.`,
+    };
+  } catch (err) {
+    return {
+      message: err?.message || 'Niespodziewany błąd serwera. Spróbuj ponownie późninej',
+      variant: 'danger',
+    };
+  }
 };
 
 export default function BookGroupForm() {
-  const message = useActionData<string | undefined>();
+  const alert = useActionData<{ message: string; variant: string } | undefined>();
   return (
     <Card>
       <Card.Header>
@@ -33,9 +42,9 @@ export default function BookGroupForm() {
       </Card.Header>
       <Card.Body as={Form} method="POST">
         <FloatingLabel className="mb-3" controlId="email" label="Email uzytkownika">
-          <Form.Control type="text" name="email" placeholder="example@gmail.com" />
+          <Form.Control required type="text" name="email" placeholder="example@gmail.com" />
         </FloatingLabel>
-        {message && <Alert variant="success">{message}</Alert>}
+        {alert && <Alert variant={alert.variant}>{alert.message}</Alert>}
         <Button type="submit">Dodaj</Button>
       </Card.Body>
     </Card>

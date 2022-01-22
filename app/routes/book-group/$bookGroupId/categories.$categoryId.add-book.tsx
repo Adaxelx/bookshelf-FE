@@ -1,10 +1,3 @@
-// id: number;
-//     categoryId: number;
-//     title: string;
-//     author: string;
-//     dateStart: Date;
-//     dateEnd: Date;
-
 import { Alert, Button, Card, FloatingLabel, Form } from 'react-bootstrap';
 import { ActionFunction, LoaderFunction, redirect, useActionData, useLoaderData } from 'remix';
 

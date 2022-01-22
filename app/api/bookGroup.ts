@@ -11,3 +11,7 @@ export const getBookGroups = ({ token, id }: WithTokenAndId): Promise<BookGroup[
 export const createBookGroup = ({ token, body }: WithTokenAndId): Promise<BookGroup> => {
   return client(`${url}`, { token, body });
 };
+
+export const addUserToGroup = ({ token, body, id }: WithTokenAndId): Promise<BookGroup> => {
+  return client(`${url}/${id}/addUser`, { token, body });
+};

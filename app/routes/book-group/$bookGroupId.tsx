@@ -1,5 +1,5 @@
-import { Card } from 'react-bootstrap';
-import { LoaderFunction, redirect, useLoaderData } from 'remix';
+import { Card, Nav } from 'react-bootstrap';
+import { LoaderFunction, Outlet, redirect, useLoaderData } from 'remix';
 
 import { getBookGroups } from '~/api/bookGroup';
 import { getSession } from '~/sessions';
@@ -7,6 +7,11 @@ import { BookGroup } from '~/types/bookGroup';
 
 export const loader: LoaderFunction = async ({ request, params }) => {
   const { bookGroupId } = params;
+  if (!bookGroupId) {
+    throw new Response('Id missing', {
+      status: 404,
+    });
+  }
   const session = await getSession(request.headers.get('Cookie'));
 
   if (!session.has('token')) {
@@ -17,23 +22,52 @@ export const loader: LoaderFunction = async ({ request, params }) => {
   const id = session.data.userId;
   const token = session.data.token;
 
-  try {
-    const data: BookGroup[] = await getBookGroups({ id, token });
-    return data.find(bookGroup => bookGroup.id === parseInt(bookGroupId));
-  } catch (err) {
-    return null;
+  const data: BookGroup[] = await getBookGroups({ id, token });
+  const name = data.find(bookGroup => bookGroup.id === parseInt(bookGroupId))?.name;
+
+  if (name && bookGroupId) {
+    return { name, bookGroupId };
   }
-  return null;
+
+  throw new Response('Not Found', {
+    status: 404,
+  });
 };
 
 export default function BookGroupView() {
-  const bookGroup = useLoaderData<BookGroup | null>();
+  const { name, bookGroupId } = useLoaderData<{ name: string; bookGroupId: string }>();
   return (
     <Card>
       <Card.Header>
-        <h3>{bookGroup.name}</h3>
+        <h3>{name}</h3>
+        <Nav defaultActiveKey={`/book-group/${bookGroupId}/addUser`}>
+          <Nav.Item>
+            <Nav.Link href={`/book-group/${bookGroupId}/addUser`}>Dodaj uzytkownika</Nav.Link>
+          </Nav.Item>
+          <Nav.Item>
+            <Nav.Link href={`/book-group/${bookGroupId}/categories`}>
+              Zarzadzaj kategoriami
+            </Nav.Link>
+          </Nav.Item>
+          <Nav.Item>
+            <Nav.Link href={`/book-group/${bookGroupId}/history`}>Historia losowań</Nav.Link>
+          </Nav.Item>
+        </Nav>
       </Card.Header>
-      <Card.Body></Card.Body>
+      <Card.Body>
+        <Outlet />
+        {/* {bookGroups?.map(({ name, id }) => (
+            <ListGroup.Item key={id} as={Link} to={`/book-group/${id}`}>
+              {name}
+            </ListGroup.Item>
+          ))} */}
+
+        {/* 1. Wylosuj kategorie na stronie. X 2. Nawigacja - dodaj uzytkownika, zarzadzaj kategoriami, historia losowań X */}
+        {/* 2. Dodaj uzytkownika - poprostu formularz */}
+        {/* 3. Zarządzanie kategoriami - takie accordiony rozwijane(lub moze lista i tam przyciski z modalami) na listę dodawanie edycje */}
+        {/* 4. Historia losowań - pofiltrowanie po wasActive kategorie*/}
+        {/* 5. Blokada po froncie - nie mozna losowac gdy jakakolwiek kategoria jest na wasActive */}
+      </Card.Body>
     </Card>
   );
 }

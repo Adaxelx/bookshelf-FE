@@ -41,7 +41,7 @@ export default function BookGroupView() {
   return (
     <Card>
       <Card.Header>
-        <h3>{name}</h3>
+        <h3>{`Klub książki - ${name}`}</h3>
         <Nav defaultActiveKey={`/book-group/${bookGroupId}`}>
           <Nav.Item>
             <Nav.Link href={`/book-group/${bookGroupId}`}>Losowanie kategorii</Nav.Link>
@@ -59,7 +59,7 @@ export default function BookGroupView() {
             </>
           )}
           <Nav.Item>
-            <Nav.Link href={`/book-group/${bookGroupId}/history`}>Historia losowań</Nav.Link>
+            <Nav.Link href={`/book-group/${bookGroupId}/drawn`}>Wylosowane kategorie</Nav.Link>
           </Nav.Item>
         </Nav>
       </Card.Header>
@@ -72,10 +72,10 @@ export default function BookGroupView() {
           ))} */}
 
         {/* 1. Wylosuj kategorie na stronie. X 2. Nawigacja - dodaj uzytkownika, zarzadzaj kategoriami, historia losowań X */}
-        {/* 2. Dodaj uzytkownika - poprostu formularz */}
+        {/* 2. Dodaj uzytkownika - poprostu formularz X */}
         {/* 3. Zarządzanie kategoriami - takie accordiony rozwijane(lub moze lista i tam przyciski z modalami) na listę dodawanie edycje */}
         {/* 4. Historia losowań - pofiltrowanie po wasActive kategorie*/}
-        {/* 5. Blokada po froncie - nie mozna losowac gdy jakakolwiek kategoria jest na wasActive */}
+        {/* 5. Blokada po froncie - nie mozna losowac gdy jakakolwiek kategoria jest na wasActive X */}
       </Card.Body>
     </Card>
   );

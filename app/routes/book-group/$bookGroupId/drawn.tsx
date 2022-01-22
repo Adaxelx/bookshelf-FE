@@ -87,18 +87,6 @@ export default function Categories() {
                   >
                     Podgląd
                   </Button>
-                  {isHistorical && (
-                    <form method="POST">
-                      <input type="hidden" name="categoryId" value={id} />
-                      <Button
-                        variant="secondary"
-                        as={Link}
-                        to={`/book-group/${bookGroupId}/categories/${id}/opinion`}
-                      >
-                        Dodaj opinie
-                      </Button>
-                    </form>
-                  )}
                 </ButtonGroup>
               </Col>
             </ListGroup.Item>

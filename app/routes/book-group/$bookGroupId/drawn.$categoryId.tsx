@@ -1,11 +1,13 @@
-import { Alert, Badge } from 'react-bootstrap';
-import { ActionFunction, LoaderFunction, redirect, useLoaderData } from 'remix';
+import { Alert, Badge, Button, FloatingLabel, Form } from 'react-bootstrap';
+import { ActionFunction, LoaderFunction, redirect, useActionData, useLoaderData } from 'remix';
 
 import { getBook } from '~/api/book';
-import { getCategories, updateBookCategory } from '~/api/bookCategory';
+import { getCategories } from '~/api/bookCategory';
+import { createOpinion, getOpinions } from '~/api/opinions';
 import { getSession } from '~/sessions';
 import { Book } from '~/types/book';
 import { BookCategory } from '~/types/bookCategory';
+import { Opinion, OpinionWithUsername } from '~/types/opinion';
 
 export const loader: LoaderFunction = async ({ request, params }) => {
   const { bookGroupId, categoryId } = params;
@@ -34,51 +36,61 @@ export const loader: LoaderFunction = async ({ request, params }) => {
   try {
     book = await getBook({ token, bookGroupId, categoryId });
   } catch (err) {}
-
-  return { category, book };
+  let opinions: Opinion[] | undefined;
+  if (book) {
+    opinions = await getOpinions({ token, bookId: book.id });
+  }
+  return { category, book, opinions };
 };
 
 export const action: ActionFunction = async ({ request, params }) => {
+  const { categoryId, bookGroupId } = params;
+  if (!categoryId || !bookGroupId) {
+    throw new Response('missing Id', { status: 404 });
+  }
   const session = await getSession(request.headers.get('Cookie'));
   if (!session.has('token')) {
     return redirect('/login');
   }
-  const { bookGroupId, categoryId } = params;
-  if (!bookGroupId || !categoryId) {
-    throw new Response('Id missing', {
-      status: 404,
-    });
-  }
-  const token = session.data.token;
 
+  const token = session.data.token;
+  const userId = session.data.userId;
   const form = await request.formData();
 
-  const name = form.get('name') as string;
-  const isActive = form.get('isActive');
-  const wasPicked = form.get('wasPicked');
+  const description = form.get('description') as string;
+  const bookId = form.get('bookId') as string;
+  const rate = form.get('rate') as string;
 
   try {
-    await updateBookCategory({
-      bookGroupId,
+    await createOpinion({
       token,
-      body: { name, isActive: Boolean(isActive), wasPicked: Boolean(wasPicked) },
-      bookCategoryId: categoryId,
+      bookGroupId,
+      body: { bookId: parseInt(bookId), userId, description, rate: parseInt(rate) },
     });
-    return redirect(`/book-group/${bookGroupId}/categories`);
+    return { message: `Pomyślnie dodano opinie`, variant: 'success' };
   } catch (err) {
-    throw new Response(err?.message || 'Nieznany błąd', {
-      status: 500,
-    });
+    return {
+      message: err?.message || 'Nieznany błąd',
+      variant: 'danger',
+      fields: { description, rate: parseInt(rate) },
+    };
   }
+};
+
+type ActionResponse = {
+  fields?: { description: string; rate: number };
+  message: string;
+  variant: string;
 };
 
 export default function Categories() {
   const {
     category: { name, isActive, wasPicked },
     book,
-  } = useLoaderData<BookCategory>();
-  console.log(wasPicked);
-  // const message = useActionData<string | undefined>();
+    opinions,
+  } = useLoaderData<{ category: BookCategory; book: Book; opinions: OpinionWithUsername[] }>();
+
+  const actionData = useActionData<ActionResponse | undefined>();
 
   return (
     <>
@@ -90,18 +102,61 @@ export default function Categories() {
       <h5>Wybrana ksiązka:</h5>
       {book ? (
         <div>
-          <p>
-            Tytuł: <span>{book.title}</span>
-          </p>
-          <p>
-            Autor: <span>{book.author}</span>
-          </p>
-          <p>
-            Data zaczęcia: <span>{new Date(book.dateStart).toLocaleDateString()}</span>
-          </p>
-          <p>
-            Planowana data zakonczenia: <span>{new Date(book.dateEnd).toLocaleDateString()}</span>
-          </p>
+          <div className="mb-4">
+            <p>
+              Tytuł: <span>{book.title}</span>
+            </p>
+            <p>
+              Autor: <span>{book.author}</span>
+            </p>
+            <p>
+              Data zaczęcia: <span>{new Date(book.dateStart).toLocaleDateString()}</span>
+            </p>
+            <p>
+              Planowana data zakonczenia: <span>{new Date(book.dateEnd).toLocaleDateString()}</span>
+            </p>
+          </div>
+          <div>
+            <h6>Opinie:</h6>
+            {opinions.length ? (
+              opinions.map(({ rate, description, id, user }) => (
+                <div key={id}>
+                  <Badge
+                    bg={rate < 3 ? 'danger' : rate < 7 ? 'warning' : 'success'}
+                  >{`${rate}/10`}</Badge>
+                  <p className="mb-0">{description}</p>
+                  <p>
+                    <i>{`~${user.name}, ${user.email}`}</i>
+                  </p>
+                </div>
+              ))
+            ) : (
+              <Alert variant="info">Brak opinii</Alert>
+            )}
+          </div>
+          {actionData && <Alert variant={actionData.variant}>{actionData.message}</Alert>}
+          <Form method="POST">
+            <input name="bookId" type="hidden" value={book.id} />{' '}
+            <FloatingLabel className="mb-3" controlId="rate" label="Ocena">
+              <Form.Control
+                type="number"
+                min={0}
+                max={10}
+                required
+                name="rate"
+                placeholder="Ocena"
+              />
+            </FloatingLabel>
+            <FloatingLabel className="mb-3" controlId="description" label="Opis">
+              <Form.Control
+                type="description"
+                name="description"
+                required
+                placeholder="Przykładowa nazwa"
+              />
+            </FloatingLabel>
+            <Button type="submit">Dodaj</Button>
+          </Form>
         </div>
       ) : (
         <Alert variant="info">Brak wybranej ksiąki</Alert>

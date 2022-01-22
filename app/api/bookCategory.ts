@@ -13,7 +13,7 @@ type DeleteBookCategory = GetAllCategoriesBody & {
 };
 
 type SendBookCategory = DeleteBookCategory & {
-  bookCategoryId?: string;
+  body: Partial<BookCategory>;
 };
 
 export const getCategories = ({
@@ -21,6 +21,17 @@ export const getCategories = ({
   token,
 }: GetAllCategoriesBody): Promise<BookCategory[]> => {
   return client(`${url}/${bookGroupId}/bookCategory/all`, { token });
+};
+
+export const createBookCategory = ({
+  bookGroupId,
+  token,
+  body,
+}: SendBookCategory): Promise<BookCategory> => {
+  return client(`${url}/${bookGroupId}/bookCategory`, {
+    token,
+    body,
+  });
 };
 
 export const updateBookCategory = ({

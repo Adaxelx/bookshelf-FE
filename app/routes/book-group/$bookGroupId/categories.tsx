@@ -1,4 +1,4 @@
-import { Alert, Button, Col, ListGroup } from 'react-bootstrap';
+import { Alert, Button, ButtonGroup, Col, ListGroup } from 'react-bootstrap';
 import {
   ActionFunction,
   Link,
@@ -65,20 +65,30 @@ export default function Categories() {
   return (
     <>
       <h4>Zarządzanie kategoriami</h4>
+      <Button as={Link} className="mb-2" to={`/book-group/${bookGroupId}/categories/new`}>
+        Dodaj nową kategorie
+      </Button>
       {message && <Alert variant="success">{message}</Alert>}
       <ListGroup>
         {bookCategories.map(({ id, name, isActive, wasPicked }) => (
           <ListGroup.Item
             key={id}
-            as={Link}
             variant={!isActive && wasPicked ? 'secondary' : undefined}
-            to={`/book-group/${bookGroupId}/categories/${id}`}
             active={isActive}
           >
             <Col className="d-flex justify-content-between align-items-center">
               {name}
               <form method="POST">
                 <input type="hidden" name="categoryId" value={id} />
+                <ButtonGroup>
+                  <Button
+                    variant="secondary"
+                    as={Link}
+                    to={`/book-group/${bookGroupId}/categories/${id}`}
+                  >
+                    Edytuj
+                  </Button>
+                </ButtonGroup>
                 <Button variant="danger" type="submit">
                   X
                 </Button>

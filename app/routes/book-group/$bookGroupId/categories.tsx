@@ -74,7 +74,7 @@ export const action: ActionFunction = async ({ request, params }) => {
 export default function Categories() {
   const { bookGroupId } = useParams();
   const bookCategories = useLoaderData<BookCategoryWithBook[]>();
-  console.log(bookCategories);
+
   const message = useActionData<string | undefined>();
   return (
     <>

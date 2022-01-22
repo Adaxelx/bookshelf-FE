@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Button, FloatingLabel, Form } from 'react-bootstrap';
 import { ActionFunction, LoaderFunction, redirect, useLoaderData } from 'remix';
 
@@ -66,7 +67,13 @@ export const action: ActionFunction = async ({ request, params }) => {
 };
 
 export default function Categories() {
-  const { name, isActive, wasPicked } = useLoaderData<BookCategory>();
+  const {
+    name,
+    isActive: defaultIsActive,
+    wasPicked: defaultWasPicked,
+  } = useLoaderData<BookCategory>();
+  const [isActive, setIsActive] = useState(defaultIsActive);
+  const [wasPicked, setWasPicked] = useState(defaultWasPicked);
   // const message = useActionData<string | undefined>();
 
   return (
@@ -86,7 +93,9 @@ export default function Categories() {
             type="checkbox"
             name="isActive"
             label="Aktualnie wybrana"
-            defaultChecked={isActive}
+            disabled={!wasPicked}
+            checked={wasPicked && isActive}
+            onClick={() => setIsActive(prevIsActive => !prevIsActive)}
           />
         </Form.Group>
         <Form.Group className="mb-3" controlId="wasPicked">
@@ -94,7 +103,13 @@ export default function Categories() {
             type="checkbox"
             name="wasPicked"
             label="Brała udział w losowaniu"
-            defaultChecked={wasPicked}
+            checked={wasPicked}
+            onClick={() =>
+              setWasPicked(prevWasPicked => {
+                !prevWasPicked && setIsActive(false);
+                return !prevWasPicked;
+              })
+            }
           />
         </Form.Group>
         <Button variant="primary" type="submit">

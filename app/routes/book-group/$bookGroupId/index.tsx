@@ -81,6 +81,9 @@ export default function Index() {
         </Alert>
       )}
       {actionData && <Alert variant="success">{`Wylosowano: ${actionData?.name}`}</Alert>}
+      {!bookCategories.length && (
+        <Alert variant="info">Brak kategorii do losowania. Dodaj nowe kategorie.</Alert>
+      )}
       <Form method="POST" action={`/book-group/${bookGroupId}/?index`}>
         <Form.Control type="hidden" name="categoryId" value={bookCategories?.[index]?.id} />
         <Button

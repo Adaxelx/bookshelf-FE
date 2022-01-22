@@ -1,5 +1,13 @@
-import { Alert, Button, ButtonGroup, Col, ListGroup } from 'react-bootstrap';
-import { ActionFunction, LoaderFunction, redirect, useActionData, useLoaderData } from 'remix';
+import { Alert, Button, Col, ListGroup } from 'react-bootstrap';
+import {
+  ActionFunction,
+  Link,
+  LoaderFunction,
+  redirect,
+  useActionData,
+  useLoaderData,
+  useParams,
+} from 'remix';
 
 import { deleteBookCategory, getCategories } from '~/api/bookCategory';
 import { getSession } from '~/sessions';
@@ -51,26 +59,30 @@ export const action: ActionFunction = async ({ request, params }) => {
 };
 
 export default function Categories() {
+  const { bookGroupId } = useParams();
   const bookCategories = useLoaderData<BookCategory[]>();
   const message = useActionData<string | undefined>();
   return (
     <>
       <h4>Zarządzanie kategoriami</h4>
       {message && <Alert variant="success">{message}</Alert>}
-      <ListGroup as="ul">
+      <ListGroup>
         {bookCategories.map(({ id, name, isActive, wasPicked }) => (
-          <ListGroup.Item key={id} as="li" active={isActive} disabled={!isActive && wasPicked}>
+          <ListGroup.Item
+            key={id}
+            as={Link}
+            variant={!isActive && wasPicked ? 'secondary' : undefined}
+            to={`/book-group/${bookGroupId}/categories/${id}`}
+            active={isActive}
+          >
             <Col className="d-flex justify-content-between align-items-center">
               {name}
-              <ButtonGroup>
-                <Button variant="secondary">Edytuj</Button>
-                <form method="POST">
-                  <input type="hidden" name="categoryId" value={id} />
-                  <Button variant="danger" type="submit">
-                    X
-                  </Button>
-                </form>
-              </ButtonGroup>
+              <form method="POST">
+                <input type="hidden" name="categoryId" value={id} />
+                <Button variant="danger" type="submit">
+                  X
+                </Button>
+              </form>
             </Col>
           </ListGroup.Item>
         ))}

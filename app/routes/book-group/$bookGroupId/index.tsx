@@ -30,7 +30,7 @@ export const loader: LoaderFunction = async ({ request, params }) => {
   const token = session.data.token;
 
   const data: BookCategory[] = await getCategories({ bookGroupId, token });
-  return data.filter(({ wasPicked }) => !wasPicked);
+  return data.filter(({ wasPicked, isActive }) => !wasPicked || isActive);
 };
 
 export const action: ActionFunction = async ({ request, params }) => {
@@ -54,7 +54,7 @@ export const action: ActionFunction = async ({ request, params }) => {
     bookGroupId,
     token,
     bookCategoryId: categoryId,
-    body: { isActive: true },
+    body: { isActive: true, wasPicked: true },
   });
 
   return data;
@@ -65,9 +65,7 @@ export default function Index() {
   const { bookGroupId } = useParams();
 
   const bookCategories = useLoaderData<BookCategory[]>();
-  const [index, setIndex] = useState(
-    () => bookCategories.findIndex(({ id }) => id === actionData?.id) || -1
-  );
+  const [index, setIndex] = useState(() => actionData?.id || -1);
   const activeCategory = bookCategories.find(({ isActive }) => isActive);
 
   const getRandom = () => {
@@ -82,12 +80,14 @@ export default function Index() {
           {`Istnieje aktywna kategoria ${activeCategory?.name}. Przed wylosowaniem kolejnej skończ ją omawiać!`}
         </Alert>
       )}
-      {index !== -1 && (
-        <Alert variant="success">{`Wylosowano: ${bookCategories[index]?.name}`}</Alert>
-      )}
+      {actionData && <Alert variant="success">{`Wylosowano: ${actionData?.name}`}</Alert>}
       <Form method="POST" action={`/book-group/${bookGroupId}/?index`}>
         <Form.Control type="hidden" name="categoryId" value={bookCategories?.[index]?.id} />
-        <Button onClick={getRandom} type="submit" disabled={Boolean(activeCategory)}>
+        <Button
+          onClick={getRandom}
+          type="submit"
+          disabled={Boolean(activeCategory) || !bookCategories.length}
+        >
           Wylosuj
         </Button>
       </Form>

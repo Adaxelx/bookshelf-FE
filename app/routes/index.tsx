@@ -9,7 +9,7 @@ export default function Index() {
         <Button as={Link} to="login" className="me-1">
           Logowanie
         </Button>
-        <Button as={Link} to="login">
+        <Button as={Link} to="register">
           Rejestracja
         </Button>
       </div>

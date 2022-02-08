@@ -10,8 +10,10 @@ import {
 } from 'remix';
 
 import { getCategories, updateBookCategory } from '~/api/bookCategory';
+import { getBookGroups } from '~/api/bookGroup';
 import { getSession } from '~/sessions';
 import { BookCategory } from '~/types/bookCategory';
+import { BookGroup } from '~/types/bookGroup';
 
 export const loader: LoaderFunction = async ({ request, params }) => {
   const { bookGroupId } = params;
@@ -28,9 +30,16 @@ export const loader: LoaderFunction = async ({ request, params }) => {
   }
 
   const token = session.data.token;
+  const id = session.data.userId;
+
+  const bookGroupData: BookGroup[] = await getBookGroups({ id, token });
+  const bookGroup = bookGroupData.find(bookGroup => bookGroup.id === parseInt(bookGroupId));
 
   const data: BookCategory[] = await getCategories({ bookGroupId, token });
-  return data.filter(({ wasPicked, isActive }) => !wasPicked || isActive);
+  return {
+    list: data.filter(({ wasPicked, isActive }) => !wasPicked || isActive),
+    isAdmin: bookGroup?.creatorId === id,
+  };
 };
 
 export const action: ActionFunction = async ({ request, params }) => {
@@ -50,21 +59,25 @@ export const action: ActionFunction = async ({ request, params }) => {
 
   const categoryId = form.get('categoryId') as string;
 
-  const data = await updateBookCategory({
-    bookGroupId,
-    token,
-    bookCategoryId: categoryId,
-    body: { isActive: true, wasPicked: true },
-  });
-
-  return data;
+  try {
+    const data = await updateBookCategory({
+      bookGroupId,
+      token,
+      bookCategoryId: categoryId,
+      body: { isActive: true, wasPicked: true },
+    });
+    return data;
+  } catch (err) {
+    throw new Error(err?.message);
+  }
 };
 
 export default function Index() {
   const actionData = useActionData<BookCategory>();
   const { bookGroupId } = useParams();
 
-  const bookCategories = useLoaderData<BookCategory[]>();
+  const { list: bookCategories, isAdmin } =
+    useLoaderData<{ list: BookCategory[]; isAdmin: boolean }>();
   const [index, setIndex] = useState(() => actionData?.id || -1);
   const activeCategory = bookCategories.find(({ isActive }) => isActive);
 
@@ -84,12 +97,13 @@ export default function Index() {
       {!bookCategories.length && (
         <Alert variant="info">Brak kategorii do losowania. Dodaj nowe kategorie.</Alert>
       )}
+      {!isAdmin && <Alert variant="info">Nie mozesz losowac nie będąc administratorem.</Alert>}
       <Form method="POST" action={`/book-group/${bookGroupId}/?index`}>
         <Form.Control type="hidden" name="categoryId" value={bookCategories?.[index]?.id} />
         <Button
           onClick={getRandom}
           type="submit"
-          disabled={Boolean(activeCategory) || !bookCategories.length}
+          disabled={!isAdmin || Boolean(activeCategory) || !bookCategories.length}
         >
           Wylosuj
         </Button>

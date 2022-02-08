@@ -11,8 +11,10 @@ import {
 
 import { getBook } from '~/api/book';
 import { deleteBookCategory, getCategories } from '~/api/bookCategory';
+import { getBookGroups } from '~/api/bookGroup';
 import { getSession } from '~/sessions';
 import { BookCategory, BookCategoryWithBook } from '~/types/bookCategory';
+import { BookGroup } from '~/types/bookGroup';
 
 export const loader: LoaderFunction = async ({ request, params }) => {
   const { bookGroupId } = params;
@@ -28,6 +30,18 @@ export const loader: LoaderFunction = async ({ request, params }) => {
   }
 
   const token = session.data.token;
+  const id = session.data.userId;
+
+  const bookGroupData: BookGroup[] = await getBookGroups({ id, token });
+  const bookGroup = bookGroupData.find(bookGroup => bookGroup.id === parseInt(bookGroupId));
+
+  if (bookGroup && bookGroupId) {
+    const { creatorId } = bookGroup;
+
+    if (creatorId !== id) {
+      return redirect(`/book-group/${bookGroupId}/drawn`);
+    }
+  }
 
   const data: BookCategory[] = await getCategories({ bookGroupId, token });
 

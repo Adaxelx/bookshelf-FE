@@ -1,9 +1,39 @@
 import { Alert, Button, Card, FloatingLabel, Form } from 'react-bootstrap';
-import { ActionFunction, useActionData } from 'remix';
+import { ActionFunction, LoaderFunction, redirect, useActionData } from 'remix';
 
-import { addUserToGroup } from '~/api/bookGroup';
+import { addUserToGroup, getBookGroups } from '~/api/bookGroup';
 import { getSession } from '~/sessions';
 import { BookGroup } from '~/types/bookGroup';
+
+export const loader: LoaderFunction = async ({ request, params }) => {
+  const { bookGroupId } = params;
+  if (!bookGroupId) {
+    throw new Response('Id missing', {
+      status: 404,
+    });
+  }
+  const session = await getSession(request.headers.get('Cookie'));
+
+  if (!session.has('token')) {
+    return redirect('/login');
+  }
+
+  const token = session.data.token;
+  const id = session.data.userId;
+
+  const bookGroupData: BookGroup[] = await getBookGroups({ id, token });
+  const bookGroup = bookGroupData.find(bookGroup => bookGroup.id === parseInt(bookGroupId));
+
+  if (bookGroup && bookGroupId) {
+    const { creatorId } = bookGroup;
+
+    if (creatorId !== id) {
+      return redirect(`/book-group/${bookGroupId}`);
+    }
+  }
+
+  return null;
+};
 
 export const action: ActionFunction = async ({ request, params }) => {
   const { bookGroupId } = params;

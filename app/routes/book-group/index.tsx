@@ -15,12 +15,13 @@ export const loader: LoaderFunction = async ({ request }) => {
 
   const id = session.data.userId;
   const token = session.data.token;
+  console.log(id, token);
   try {
     const data = await getBookGroups({ id, token });
     return data;
   } catch (err) {
     // Add Error handling
-    return null;
+    throw err;
   }
 };
 

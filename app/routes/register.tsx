@@ -87,6 +87,7 @@ export const action: ActionFunction = async ({ request }) => {
     const data = await register({ email, password, name });
 
     session.set('token', data.token);
+    session.set('userId', data.id);
     return redirect('/book-group', {
       headers: {
         'Set-Cookie': await commitSession(session),

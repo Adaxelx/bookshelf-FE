@@ -4,12 +4,14 @@ import { Links, LiveReload, Meta, Outlet, Scripts, ScrollRestoration } from 'rem
 export const meta: MetaFunction = () => {
   return { title: 'New Remix App' };
 };
+import stylesTailwind from './tailwind.css';
 
 export function links() {
   return [
+    { rel: 'stylesheet', href: styles },
     {
       rel: 'stylesheet',
-      href: styles,
+      href: stylesTailwind,
     },
   ];
 }
@@ -27,6 +29,7 @@ export default function App() {
         <Outlet />
         <ScrollRestoration />
         <Scripts />
+
         {process.env.NODE_ENV === 'development' && <LiveReload />}
       </body>
     </html>
